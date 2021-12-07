@@ -129,7 +129,7 @@ class gameUI(QMainWindow):
         def guessMechanic():
             if self.attempt > 0:
                 answer = self.inputAnswer.text().upper()
-                
+
                 for i, char in enumerate(guessWordList):
                     if str(answer).upper() == str(char).upper():
                         guessQuestion.pop(i).upper()
@@ -139,7 +139,7 @@ class gameUI(QMainWindow):
                     self.attempt -= 1
                     self.lblImage.setPixmap(
                         QPixmap(f"gambar/hangman{self.attempt}.png"))
-                
+
                 if str(guessQuestion).upper() == str(guessWordList).upper():
                     self.msgBoxwin()
                 if self.attempt == 0:
@@ -268,6 +268,7 @@ class gameUI(QMainWindow):
 
 #class scoreUI():
 
+
 class editDatabaseUI(QMainWindow):
     def __init__(self):
         super(editDatabaseUI, self).__init__()
@@ -288,43 +289,57 @@ class editDatabaseUI(QMainWindow):
         lblSoal = QLabel("Daftar Kunci Jawaban", self)
         lblSoal.setFont(font)
 
-        tableView = QTableView()
+        self.tableView = QTableWidget()
+        self.tableView.setColumnCount(1)
+        self.tableView.setHorizontalHeaderLabels(["kata"])
+        self.tableView.setColumnWidth(0, 325)
 
-        # create sqlquery
-        query = QSqlQuery()
-        result = query.exec_("select * from soal")
-        if result:
-            model = QSqlTableModel(self)
-            model.setQuery(query)
-            tableView.setModel(model)
-            tableView.show()
+        def loaddata():
+            with con.cursor() as x:
+                query = "SELECT * FROM soal"
+                x.execute(query)
+                hasil = x.fetchall()
+                rowsCount = len(hasil)
+                self.tableView.setRowCount(rowsCount)
+                tableRow = -1
+                for x in hasil:
+                    self.tableView.setItem(tableRow, 1, QTableWidgetItem(x[0]))
+                    tableRow += 1
+
+        loaddata()
 
         lblTanya = QLabel("Masukkan Soal Baru", self)
         lblTanya.setFont(font)
-        inputSoal = QLineEdit(self)
-        btnTambah = QPushButton("Tambah",self)
-        
+        inputKata = QLineEdit(self)
+        btnTambah = QPushButton("Tambah", self)
+
         def klikTambah():
-            Question = inputSoal.text().lower()
+            kata = inputKata.text().lower()
             with con.cursor() as x:
                 sql = "INSERT INTO soal (kata) VALUES (%s)"
-                data = (Question)
+                data = (kata)
                 x.execute(sql, data)
-                print("Data mahasiswa berhasil di tambahkan")
                 con.commit()
-        
+                loaddata()
+
         btnTambah.clicked.connect(klikTambah)
 
         kiriLayout.addWidget(lblSoal)
-        kiriLayout.addWidget(tableView)
+        kiriLayout.addWidget(self.tableView)
         kananLayout.addWidget(lblTanya)
-        kananLayout.addWidget(inputSoal)
+        kananLayout.addWidget(inputKata)
         kananLayout.addWidget(btnTambah)
         mainLayout.addLayout(kiriLayout)
         mainLayout.addLayout(kananLayout)
 
         layoutWidget.setLayout(mainLayout)
         self.setCentralWidget(layoutWidget)
+
+    def closeEvent(self, closeEvent):
+        self.menu = mainUI()
+        self.close()
+        self.menu.show()
+
 
 def exec():
     hangman = QApplication([])
