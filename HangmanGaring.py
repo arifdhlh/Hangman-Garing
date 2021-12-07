@@ -12,22 +12,35 @@ con = pymysql.connect(host='localhost',
                       password='',
                       db='tubeshangman')
 
-
 class mainUI(QMainWindow):
     def __init__(self):
         super(mainUI, self).__init__()
         self.setWindowTitle("Hangman")
-        self.setWindowIcon(QIcon("icon.png"))
+        self.setWindowIcon(QIcon("gambar/icon.png"))
         self.setFixedSize(700, 650)
         self.initUI()
+
+        tutorialAct = QAction('&Cara Bermain', self)
+        tutorialAct.setStatusTip('Tutorial Bermain Hangman')
+        tutorialAct.triggered.connect(qApp.quit)
+
+        creditsAct = QAction('&Credits', self)
+        creditsAct.setStatusTip('Pembuat Aplikasi')
+        creditsAct.triggered.connect(self.connectCredit)
+
+        self.statusBar()
+
+        menubar = self.menuBar()
+        fileMenu = menubar.addMenu('&Informasi')
+        fileMenu.addAction(tutorialAct)
+        fileMenu.addAction(creditsAct)
 
     def initUI(self):
         self.layoutWidget = QWidget()
         self.mainLayout = QVBoxLayout()
 
         judul = QLabel(self)
-        judul.setPixmap(QPixmap("bg.png"))
-        judul.setScaledContents(True)
+        judul.setPixmap(QPixmap("gambar/bg.png"))
 
         self.btnStart = QPushButton('Mulai', self)
         self.btnStart.clicked.connect(self.connectInputName)
@@ -57,12 +70,40 @@ class mainUI(QMainWindow):
         self.inputSoal.show()
         self.close()
 
+    def connectCredit(self):
+        self.infoCredit = creditUI()
+        self.infoCredit.show()
+        self.close()
+
+class creditUI(QMainWindow):
+    def __init__(self):
+        super(creditUI, self).__init__()
+        self.setWindowTitle("Hangman")
+        self.setWindowIcon(QIcon("gambar/icon.png"))
+        self.setFixedSize(700, 650)
+        self.pembuat()
+
+    def pembuat(self):
+        self.layoutWidget = QWidget()
+        self.mainLayout = QVBoxLayout()
+
+        judul = QLabel(self)
+        judul.setPixmap(QPixmap("gambar/credits.png"))
+
+        self.mainLayout.addWidget(judul)
+        self.layoutWidget.setLayout(self.mainLayout)
+        self.setCentralWidget(self.layoutWidget)
+    
+    def closeEvent(self, closeEvent):
+        self.menu = mainUI()
+        self.close()
+        self.menu.show()
 
 class inputUI(QMainWindow):
     def __init__(self):
         super(inputUI, self).__init__()
         self.setWindowTitle("Hangman")
-        self.setWindowIcon(QIcon("icon.png"))
+        self.setWindowIcon(QIcon("gambar/icon.png"))
         self.setFixedSize(300, 100)
         self.inputName()
 
@@ -87,12 +128,11 @@ class inputUI(QMainWindow):
         self.game.show()
         self.close()
 
-
 class gameUI(QMainWindow):
     def __init__(self):
         super(gameUI, self).__init__()
         self.setWindowTitle("Hangman")
-        self.setWindowIcon(QIcon("icon.png"))
+        self.setWindowIcon(QIcon("gambar/icon.png"))
         self.setFixedSize(700, 500)
         self.theGame()
 
@@ -129,7 +169,7 @@ class gameUI(QMainWindow):
         def guessMechanic():
             if self.attempt > 0:
                 answer = self.inputAnswer.text().upper()
-
+                
                 for i, char in enumerate(guessWordList):
                     if str(answer).upper() == str(char).upper():
                         guessQuestion.pop(i).upper()
@@ -139,7 +179,7 @@ class gameUI(QMainWindow):
                     self.attempt -= 1
                     self.lblImage.setPixmap(
                         QPixmap(f"gambar/hangman{self.attempt}.png"))
-
+                
                 if str(guessQuestion).upper() == str(guessWordList).upper():
                     self.msgBoxwin()
                 if self.attempt == 0:
@@ -163,7 +203,7 @@ class gameUI(QMainWindow):
     def answerPicker(self):
         buatsoal = []
         with con.cursor() as x:
-            sql = "SELECT*FROM soal"
+            sql = "SELECT kata FROM soal"
             x.execute(sql)
             hasil = x.fetchall()
             for x in hasil:
@@ -204,7 +244,6 @@ class gameUI(QMainWindow):
         def connectMenu():
             menu = mainUI()
             game = gameUI()
-            self.close()
             game.close()
             menu.show()
 
@@ -249,9 +288,9 @@ class gameUI(QMainWindow):
         def connectMenu():
             menu = mainUI()
             game = gameUI()
+            menu.show()
             self.close()
             game.close()
-            menu.show()
 
         btnSelesai = QPushButton("Selesai")
         btnSelesai.clicked.connect(connectMenu)
@@ -265,22 +304,20 @@ class gameUI(QMainWindow):
         layoutWidget.setLayout(mainLayout)
         self.setCentralWidget(layoutWidget)
 
-
 #class scoreUI():
-
 
 class editDatabaseUI(QMainWindow):
     def __init__(self):
         super(editDatabaseUI, self).__init__()
         self.setWindowTitle("Hangman")
-        self.setWindowIcon(QIcon("icon.png"))
+        self.setWindowIcon(QIcon("gambar/icon.png"))
         self.setFixedSize(700, 700)
         self.tambahSoal()
 
     def tambahSoal(self):
         font = QFont()
         font.setPointSize(16)
-
+        font.setBold(True)
         layoutWidget = QWidget()
         mainLayout = QHBoxLayout()
         kiriLayout = QVBoxLayout()
@@ -288,10 +325,10 @@ class editDatabaseUI(QMainWindow):
 
         lblSoal = QLabel("Daftar Kunci Jawaban", self)
         lblSoal.setFont(font)
-
+        lblSoal.setAlignment(Qt.AlignCenter)
         self.tableView = QTableWidget()
         self.tableView.setColumnCount(1)
-        self.tableView.setHorizontalHeaderLabels(["kata"])
+        self.tableView.setHorizontalHeaderLabels(["Kata"])
         self.tableView.setColumnWidth(0, 325)
 
         def loaddata():
@@ -310,25 +347,44 @@ class editDatabaseUI(QMainWindow):
 
         lblTanya = QLabel("Masukkan Soal Baru", self)
         lblTanya.setFont(font)
-        inputKata = QLineEdit(self)
-        btnTambah = QPushButton("Tambah", self)
+        lblTanya.setAlignment(Qt.AlignCenter)
+        lblFB = QLabel("", self)
+        inputSoal = QLineEdit(self)
+        btnTambah = QPushButton("Tambah",self)
+        btnHapus = QPushButton("Hapus",self)
 
         def klikTambah():
-            kata = inputKata.text().lower()
+            Question = inputSoal.text().lower()
             with con.cursor() as x:
                 sql = "INSERT INTO soal (kata) VALUES (%s)"
-                data = (kata)
+                data = (Question)
                 x.execute(sql, data)
+                lblFB.setText("Data Berhasil Dimasukkan")
+                lblFB.setAlignment(Qt.AlignCenter)
                 con.commit()
                 loaddata()
 
+        def klikHapus():
+            Question = inputSoal.text().lower()
+            with con.cursor() as x:
+                sql = "DELETE FROM soal WHERE soal.kata = %s"
+                data = (Question)
+                x.execute(sql, data)
+                lblFB.setText("Data Berhasil Dihapus")
+                lblFB.setAlignment(Qt.AlignCenter)
+                con.commit()
+                loaddata()
+        
         btnTambah.clicked.connect(klikTambah)
+        btnHapus.clicked.connect(klikHapus)
 
         kiriLayout.addWidget(lblSoal)
         kiriLayout.addWidget(self.tableView)
+        kananLayout.addWidget(lblFB)
         kananLayout.addWidget(lblTanya)
-        kananLayout.addWidget(inputKata)
+        kananLayout.addWidget(inputSoal)
         kananLayout.addWidget(btnTambah)
+        kananLayout.addWidget(btnHapus)
         mainLayout.addLayout(kiriLayout)
         mainLayout.addLayout(kananLayout)
 
@@ -339,13 +395,11 @@ class editDatabaseUI(QMainWindow):
         self.menu = mainUI()
         self.close()
         self.menu.show()
-
-
+    
 def exec():
     hangman = QApplication([])
     main = mainUI()
     main.show()
     sys.exit(hangman.exec_())
-
 
 exec()
