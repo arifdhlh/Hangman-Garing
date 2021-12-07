@@ -2,6 +2,8 @@ import sys
 from PyQt5 import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtSql import *
 import pymysql
 import random
 
@@ -31,15 +33,15 @@ class mainUI(QMainWindow):
         self.btnStart.clicked.connect(self.connectInputName)
         btnScore = QPushButton('Skor', self)
         #statsbtn.clicked.connect()
-        btnEdit = QPushButton('Edit', self)
-        #editbtn.clicked.connect()
+        self.btnEdit = QPushButton('Edit', self)
+        self.btnEdit.clicked.connect(self.connectTambahSoal)
         btnQuit = QPushButton('Keluar', self)
         btnQuit.clicked.connect(quit)
 
         self.mainLayout.addWidget(judul)
         self.mainLayout.addWidget(self.btnStart)
         self.mainLayout.addWidget(btnScore)
-        self.mainLayout.addWidget(btnEdit)
+        self.mainLayout.addWidget(self.btnEdit)
         self.mainLayout.addWidget(btnQuit)
 
         self.layoutWidget.setLayout(self.mainLayout)
@@ -48,6 +50,11 @@ class mainUI(QMainWindow):
     def connectInputName(self):
         self.inputUsername = inputUI()
         self.inputUsername.show()
+        self.close()
+
+    def connectTambahSoal(self):
+        self.inputSoal = editDatabaseUI()
+        self.inputSoal.show()
         self.close()
 
 
@@ -63,13 +70,13 @@ class inputUI(QMainWindow):
         self.layoutWidget = QWidget()
         self.mainLayout = QVBoxLayout()
 
-        inputNama = QLineEdit(self)
+        self.inputNama = QLineEdit(self)
         self.btnInput = QPushButton("Lanjut", self)
         self.btnInput.clicked.connect(self.connectGame)
         lblName = QLabel("Masukkan Namamu", self)
 
         self.mainLayout.addWidget(lblName)
-        self.mainLayout.addWidget(inputNama)
+        self.mainLayout.addWidget(self.inputNama)
         self.mainLayout.addWidget(self.btnInput)
 
         self.layoutWidget.setLayout(self.mainLayout)
@@ -86,9 +93,14 @@ class gameUI(QMainWindow):
         super(gameUI, self).__init__()
         self.setWindowTitle("Hangman")
         self.setWindowIcon(QIcon("icon.png"))
+        self.setFixedSize(700, 500)
         self.theGame()
 
     def theGame(self):
+        font = QFont()
+        font.setPointSize(16)
+        font.setBold(True)
+
         self.layoutWidget = QWidget()
         self.mainLayout = QHBoxLayout()
         self.imageLayout = QVBoxLayout()
@@ -107,28 +119,29 @@ class gameUI(QMainWindow):
         #User Interface
         self.lblImage = QLabel("", self)
         self.lblImage.setPixmap(QPixmap(f"gambar/hangman{self.attempt}.png"))
-        self.lblQuestion = QLabel("Coba Tebak!!", self)
+        pemisah = "  "
+        self.lblQuestion = QLabel(pemisah.join(guessQuestion), self)
+        self.lblQuestion.setFont(font)
         self.inputAnswer = QLineEdit(self)
         self.inputAnswer.setMaxLength(1)
         self.btnCheck = QPushButton("Check", self)
 
         def guessMechanic():
             if self.attempt > 0:
-                if guessQuestion == guessWordList:
-                    self.msgBoxwin()
-
-                answer = self.inputAnswer.text()
-
+                answer = self.inputAnswer.text().upper()
+                
                 for i, char in enumerate(guessWordList):
-                    if str(answer) == str(char):
-                        guessQuestion.pop(i)
+                    if str(answer).upper() == str(char).upper():
+                        guessQuestion.pop(i).upper()
                         guessQuestion.insert(i, answer)
-                        self.lblQuestion.setText(f"{guessQuestion}")
-                if str(answer) not in guessWordList:
+                        self.lblQuestion.setText(pemisah.join(guessQuestion))
+                if str(answer).upper() not in str(guessWordList).upper():
                     self.attempt -= 1
                     self.lblImage.setPixmap(
                         QPixmap(f"gambar/hangman{self.attempt}.png"))
-
+                
+                if str(guessQuestion).upper() == str(guessWordList).upper():
+                    self.msgBoxwin()
                 if self.attempt == 0:
                     self.msgBoxlose()
 
@@ -162,13 +175,23 @@ class gameUI(QMainWindow):
     def msgBoxwin(self):
         self.msgBoxwin = QWindow()
         self.show()
-        self.setFixedSize(300, 300)
+        self.setFixedSize(700, 500)
         layoutWidget = QWidget()
         mainLayout = QVBoxLayout()
+        secondLayout = QHBoxLayout()
         btnLayout = QHBoxLayout()
 
-        lblRestart = QLabel("Anda meninggoy")
-        btnCobaLagi = QPushButton("Coba Lagi")
+        btnCobaLagi = QPushButton("Main Lagi")
+
+        gifWin = QMovie("gambar/win.gif")
+        winImage = QLabel(self)
+        winImage.setMovie(gifWin)
+        gifWin.start()
+
+        gifWin2 = QMovie("gambar/menang.gif")
+        winImage2 = QLabel(self)
+        winImage2.setMovie(gifWin2)
+        gifWin2.start()
 
         def connectGame():
             game = gameUI()
@@ -177,7 +200,6 @@ class gameUI(QMainWindow):
             game.show()
 
         btnCobaLagi.clicked.connect(connectGame)
-        btnSelesai = QPushButton("Selesai")
 
         def connectMenu():
             menu = mainUI()
@@ -186,9 +208,14 @@ class gameUI(QMainWindow):
             game.close()
             menu.show()
 
+        btnSelesai = QPushButton("Selesai")
+        btnSelesai.clicked.connect(connectMenu)
+
         btnLayout.addWidget(btnCobaLagi)
         btnLayout.addWidget(btnSelesai)
-        mainLayout.addWidget(lblRestart)
+        secondLayout.addWidget(winImage)
+        secondLayout.addWidget(winImage2)
+        mainLayout.addLayout(secondLayout)
         mainLayout.addLayout(btnLayout)
         layoutWidget.setLayout(mainLayout)
         self.setCentralWidget(layoutWidget)
@@ -196,13 +223,20 @@ class gameUI(QMainWindow):
     def msgBoxlose(self):
         self.msgBoxlose = QWindow()
         self.show()
-        self.setFixedSize(300, 300)
+        self.setFixedSize(700, 500)
         layoutWidget = QWidget()
         mainLayout = QVBoxLayout()
+        secondLayout = QHBoxLayout()
         btnLayout = QHBoxLayout()
 
-        lblRestart = QLabel("Anda meninggoy")
         btnCobaLagi = QPushButton("Coba Lagi")
+        loseImage = QLabel("", self)
+        loseImage.setPixmap(QPixmap("gambar/hangman0.png"))
+
+        gifLose = QMovie("gambar/kalah.gif")
+        loseImage2 = QLabel(self)
+        loseImage2.setMovie(gifLose)
+        gifLose.start()
 
         def connectGame():
             game = gameUI()
@@ -211,7 +245,6 @@ class gameUI(QMainWindow):
             game.show()
 
         btnCobaLagi.clicked.connect(connectGame)
-        btnSelesai = QPushButton("Selesai")
 
         def connectMenu():
             menu = mainUI()
@@ -220,9 +253,14 @@ class gameUI(QMainWindow):
             game.close()
             menu.show()
 
+        btnSelesai = QPushButton("Selesai")
+        btnSelesai.clicked.connect(connectMenu)
+
         btnLayout.addWidget(btnCobaLagi)
         btnLayout.addWidget(btnSelesai)
-        mainLayout.addWidget(lblRestart)
+        secondLayout.addWidget(loseImage)
+        secondLayout.addWidget(loseImage2)
+        mainLayout.addLayout(secondLayout)
         mainLayout.addLayout(btnLayout)
         layoutWidget.setLayout(mainLayout)
         self.setCentralWidget(layoutWidget)
@@ -230,8 +268,63 @@ class gameUI(QMainWindow):
 
 #class scoreUI():
 
-#class editDatabaseUI():
+class editDatabaseUI(QMainWindow):
+    def __init__(self):
+        super(editDatabaseUI, self).__init__()
+        self.setWindowTitle("Hangman")
+        self.setWindowIcon(QIcon("icon.png"))
+        self.setFixedSize(700, 700)
+        self.tambahSoal()
 
+    def tambahSoal(self):
+        font = QFont()
+        font.setPointSize(16)
+
+        layoutWidget = QWidget()
+        mainLayout = QHBoxLayout()
+        kiriLayout = QVBoxLayout()
+        kananLayout = QVBoxLayout()
+
+        lblSoal = QLabel("Daftar Kunci Jawaban", self)
+        lblSoal.setFont(font)
+
+        tableView = QTableView()
+
+        # create sqlquery
+        query = QSqlQuery()
+        result = query.exec_("select * from soal")
+        if result:
+            model = QSqlTableModel(self)
+            model.setQuery(query)
+            tableView.setModel(model)
+            tableView.show()
+
+        lblTanya = QLabel("Masukkan Soal Baru", self)
+        lblTanya.setFont(font)
+        inputSoal = QLineEdit(self)
+        btnTambah = QPushButton("Tambah",self)
+        
+        def klikTambah():
+            Question = inputSoal.text().lower()
+            with con.cursor() as x:
+                sql = "INSERT INTO soal (kata) VALUES (%s)"
+                data = (Question)
+                x.execute(sql, data)
+                print("Data mahasiswa berhasil di tambahkan")
+                con.commit()
+        
+        btnTambah.clicked.connect(klikTambah)
+
+        kiriLayout.addWidget(lblSoal)
+        kiriLayout.addWidget(tableView)
+        kananLayout.addWidget(lblTanya)
+        kananLayout.addWidget(inputSoal)
+        kananLayout.addWidget(btnTambah)
+        mainLayout.addLayout(kiriLayout)
+        mainLayout.addLayout(kananLayout)
+
+        layoutWidget.setLayout(mainLayout)
+        self.setCentralWidget(layoutWidget)
 
 def exec():
     hangman = QApplication([])
