@@ -12,7 +12,6 @@ con = pymysql.connect(host='localhost',
                       password='',
                       db='tubeshangman')
 
-
 class mainUI(QMainWindow):
     def __init__(self):
         super(mainUI, self).__init__()
