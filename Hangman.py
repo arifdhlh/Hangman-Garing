@@ -289,7 +289,7 @@ class gameUI(QMainWindow):
         secondLayout = QHBoxLayout()
         btnLayout = QHBoxLayout()
 
-        btnCobaLagi = QPushButton("Main Lagi")
+        btnCobaLagi = QPushButton("Lanjut Main")
 
         gifWin = QMovie("gambar/win.gif")
         winImage = QLabel(self)
