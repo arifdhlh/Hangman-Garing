@@ -22,7 +22,7 @@ class mainUI(QMainWindow):
 
         tutorialAct = QAction('&Cara Bermain', self)
         tutorialAct.setStatusTip('Tutorial Bermain Hangman')
-        tutorialAct.triggered.connect(qApp.quit)
+        tutorialAct.triggered.connect(self.connectTutor)
 
         creditsAct = QAction('&Credits', self)
         creditsAct.setStatusTip('Pembuat Aplikasi')
@@ -74,6 +74,35 @@ class mainUI(QMainWindow):
         self.infoCredit = creditUI()
         self.infoCredit.show()
         self.close()
+
+    def connectTutor(self):
+        self.infoTutor = tutorialUI()
+        self.infoTutor.show()
+        self.close()
+
+class tutorialUI(QMainWindow):
+    def __init__(self):
+        super(tutorialUI, self).__init__()
+        self.setWindowTitle("Hangman")
+        self.setWindowIcon(QIcon("gambar/icon.png"))
+        self.setFixedSize(700, 650)
+        self.tutor()
+
+    def tutor(self):
+        self.layoutWidget = QWidget()
+        self.mainLayout = QVBoxLayout()
+
+        judul = QLabel(self)
+        judul.setPixmap(QPixmap("gambar/tutorial.png"))
+
+        self.mainLayout.addWidget(judul)
+        self.layoutWidget.setLayout(self.mainLayout)
+        self.setCentralWidget(self.layoutWidget)
+    
+    def closeEvent(self, closeEvent):
+        self.menu = mainUI()
+        self.close()
+        self.menu.show()
 
 class creditUI(QMainWindow):
     def __init__(self):
