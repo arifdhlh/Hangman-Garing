@@ -12,6 +12,7 @@ con = pymysql.connect(host='localhost',
                       password='',
                       db='tubeshangman')
 
+
 class mainUI(QMainWindow):
     def __init__(self):
         super(mainUI, self).__init__()
@@ -80,6 +81,7 @@ class mainUI(QMainWindow):
         self.infoTutor.show()
         self.close()
 
+
 class tutorialUI(QMainWindow):
     def __init__(self):
         super(tutorialUI, self).__init__()
@@ -98,11 +100,12 @@ class tutorialUI(QMainWindow):
         self.mainLayout.addWidget(judul)
         self.layoutWidget.setLayout(self.mainLayout)
         self.setCentralWidget(self.layoutWidget)
-    
+
     def closeEvent(self, closeEvent):
         self.menu = mainUI()
         self.close()
         self.menu.show()
+
 
 class creditUI(QMainWindow):
     def __init__(self):
@@ -122,11 +125,12 @@ class creditUI(QMainWindow):
         self.mainLayout.addWidget(judul)
         self.layoutWidget.setLayout(self.mainLayout)
         self.setCentralWidget(self.layoutWidget)
-    
+
     def closeEvent(self, closeEvent):
         self.menu = mainUI()
         self.close()
         self.menu.show()
+
 
 class inputUI(QMainWindow):
     def __init__(self):
@@ -152,10 +156,22 @@ class inputUI(QMainWindow):
         self.layoutWidget.setLayout(self.mainLayout)
         self.setCentralWidget(self.layoutWidget)
 
+    def getUsername(self):
+        nama = str(self.inputNama.text())
+        return nama
+
     def connectGame(self):
+        self.getUsername()
+        with con.cursor() as x:
+            nama = self.getUsername()
+            query = "INSERT INTO skor (skor_nama) VALUES (%s)"
+            x.execute(query, nama)
+            con.commit()
+        print(self.getUsername())
         self.game = gameUI()
         self.game.show()
         self.close()
+
 
 class gameUI(QMainWindow):
     def __init__(self):
@@ -184,6 +200,17 @@ class gameUI(QMainWindow):
             guessWordList.append(word)
         for x in range(len(guessWordList)):
             guessQuestion.append("_")
+        with con.cursor() as x:
+            queryA = "SELECT ID_skor FROM skor"
+            x.execute(queryA)
+            self.latestID = len(x.fetchall())
+            queryB = "SELECT skor_catat FROM skor WHERE skor.ID_skor = %s"
+            data = (self.latestID)
+            x.execute(queryB, data)
+            hasilQuery = x.fetchall()
+            self.skor = hasilQuery[-1]
+            for x in self.skor:
+                self.skor = x
 
         #User Interface
         self.lblImage = QLabel("", self)
@@ -198,7 +225,7 @@ class gameUI(QMainWindow):
         def guessMechanic():
             if self.attempt > 0:
                 answer = self.inputAnswer.text().upper()
-                
+
                 for i, char in enumerate(guessWordList):
                     if str(answer).upper() == str(char).upper():
                         guessQuestion.pop(i).upper()
@@ -208,9 +235,10 @@ class gameUI(QMainWindow):
                     self.attempt -= 1
                     self.lblImage.setPixmap(
                         QPixmap(f"gambar/hangman{self.attempt}.png"))
-                
+
                 if str(guessQuestion).upper() == str(guessWordList).upper():
                     self.msgBoxwin()
+
                 if self.attempt == 0:
                     self.msgBoxlose()
 
@@ -232,8 +260,8 @@ class gameUI(QMainWindow):
     def answerPicker(self):
         buatsoal = []
         with con.cursor() as x:
-            sql = "SELECT kata FROM soal"
-            x.execute(sql)
+            query = "SELECT kata FROM soal"
+            x.execute(query)
             hasil = x.fetchall()
             for x in hasil:
                 for y in range(len(x)):
@@ -242,6 +270,13 @@ class gameUI(QMainWindow):
         return picker
 
     def msgBoxwin(self):
+        with con.cursor() as x:
+            query = "UPDATE skor SET skor_catat = %s WHERE skor.ID_skor = %s"
+            self.skor += int(100)
+            data = (self.skor, self.latestID)
+            x.execute(query, data)
+            con.commit()
+
         self.msgBoxwin = QWindow()
         self.show()
         self.setFixedSize(700, 500)
@@ -263,17 +298,15 @@ class gameUI(QMainWindow):
         gifWin2.start()
 
         def connectGame():
-            game = gameUI()
+            menu = gameUI()
             self.close()
-            game.close()
-            game.show()
+            menu.show()
 
         btnCobaLagi.clicked.connect(connectGame)
 
         def connectMenu():
             menu = mainUI()
-            game = gameUI()
-            game.close()
+            self.close()
             menu.show()
 
         btnSelesai = QPushButton("Selesai")
@@ -333,7 +366,9 @@ class gameUI(QMainWindow):
         layoutWidget.setLayout(mainLayout)
         self.setCentralWidget(layoutWidget)
 
+
 #class scoreUI():
+
 
 class editDatabaseUI(QMainWindow):
     def __init__(self):
@@ -379,15 +414,15 @@ class editDatabaseUI(QMainWindow):
         lblTanya.setAlignment(Qt.AlignCenter)
         lblFB = QLabel("", self)
         inputSoal = QLineEdit(self)
-        btnTambah = QPushButton("Tambah",self)
-        btnHapus = QPushButton("Hapus",self)
+        btnTambah = QPushButton("Tambah", self)
+        btnHapus = QPushButton("Hapus", self)
 
         def klikTambah():
             Question = inputSoal.text().lower()
             with con.cursor() as x:
-                sql = "INSERT INTO soal (kata) VALUES (%s)"
+                query = "INSERT INTO soal (kata) VALUES (%s)"
                 data = (Question)
-                x.execute(sql, data)
+                x.execute(query, data)
                 lblFB.setText("Data Berhasil Dimasukkan")
                 lblFB.setAlignment(Qt.AlignCenter)
                 con.commit()
@@ -396,14 +431,14 @@ class editDatabaseUI(QMainWindow):
         def klikHapus():
             Question = inputSoal.text().lower()
             with con.cursor() as x:
-                sql = "DELETE FROM soal WHERE soal.kata = %s"
+                query = "DELETE FROM soal WHERE soal.kata = %s"
                 data = (Question)
-                x.execute(sql, data)
+                x.execute(query, data)
                 lblFB.setText("Data Berhasil Dihapus")
                 lblFB.setAlignment(Qt.AlignCenter)
                 con.commit()
                 loaddata()
-        
+
         btnTambah.clicked.connect(klikTambah)
         btnHapus.clicked.connect(klikHapus)
 
@@ -424,11 +459,13 @@ class editDatabaseUI(QMainWindow):
         self.menu = mainUI()
         self.close()
         self.menu.show()
-    
+
+
 def exec():
     hangman = QApplication([])
     main = mainUI()
     main.show()
     sys.exit(hangman.exec_())
+
 
 exec()
